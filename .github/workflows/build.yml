@@ -16,7 +16,6 @@ jobs:
       uses: gradle/actions/setup-gradle@v3
       with:
         gradle-version: '8.5' 
-        # Gradle 8.5 handles memory much better than 8.2
     
     - name: Accept Android Licenses
       run: |
@@ -24,7 +23,7 @@ jobs:
         
     - name: Build APK
       run: |
-        echo "🔹 RUNNING WORKFLOW VERSION: 10.0 (LIGHTWEIGHT ENGINE + GRADLE 8.5)"
+        echo "🔹 RUNNING WORKFLOW VERSION: 11.0 (SINGLE WORKER + 2GB LIMIT)"
         
         # 0. Unzip logic
         if [ -f "source.zip" ]; then
@@ -47,14 +46,14 @@ jobs:
         PROJECT_DIR=$(dirname "$SETTINGS_FILE")
         cd "$PROJECT_DIR"
         
-        # 2. Build with Optimized Settings
-        # -Xmx2560m: Sweet spot for GitHub Runners (Leaves room for Metaspace)
-        # clean: Ensures no stale cache causes crashes
-        echo "🚀 Starting Build (Clean + Assemble)..."
+        # 2. Build with STRICT Memory Limits
+        # --max-workers=1: CRITICAL. Prevents parallel tasks from killing the runner.
+        # -Xmx2048m: Safe limit for free runners.
+        echo "🚀 Starting Build (Single Worker Mode)..."
         
         chmod +x gradlew || true
         
-        gradle clean assembleDebug -x lint --no-daemon --stacktrace         -Dorg.gradle.jvmargs="-Xmx2560m -XX:MaxMetaspaceSize=512m"
+        gradle assembleDebug -x lint --no-daemon --max-workers=1 --stacktrace         -Dorg.gradle.jvmargs="-Xmx2048m -XX:MaxMetaspaceSize=512m -XX:+UseParallelGC"
         
     - name: Upload APK
       uses: actions/upload-artifact@v4
