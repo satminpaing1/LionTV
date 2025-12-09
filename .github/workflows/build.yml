@@ -5,29 +5,42 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
-    - uses: actions/setup-java@v4
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
+        
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
       with:
-        gradle-version: '8.0.2'
+        gradle-version: '8.2'
+        
     - name: Build APK
       run: |
-        set -e
-        # Find settings.gradle to locate project root
-        PROJECT_FILE=$(find . -name settings.gradle -print -quit)
-        if [ -z "$PROJECT_FILE" ]; then
-          echo "Error: settings.gradle not found!"
+        # 1. Find the project root (where settings.gradle is)
+        SETTINGS_FILE=$(find . -name settings.gradle -type f | head -n 1)
+        
+        if [ -z "$SETTINGS_FILE" ]; then
+          echo "❌ Error: settings.gradle not found."
+          echo "📂 Listing all files to help debug:"
+          ls -R
           exit 1
         fi
-        PROJECT_DIR=$(dirname "$PROJECT_FILE")
-        echo "Found project in: $PROJECT_DIR"
+        
+        PROJECT_DIR=$(dirname "$SETTINGS_FILE")
+        echo "✅ Found project in: $PROJECT_DIR"
+        
         cd "$PROJECT_DIR"
-        # Run system gradle instead of ./gradlew
-        gradle assembleDebug --no-daemon
-    - uses: actions/upload-artifact@v4
+        
+        # 2. Run Gradle directly (System installed)
+        # We use 'gradle' not './gradlew' because the wrapper is missing
+        echo "🚀 Starting Build with System Gradle..."
+        gradle assembleDebug --no-daemon --stacktrace
+        
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
       with:
         name: app-debug
         path: '**/*.apk'
