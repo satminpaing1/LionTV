@@ -1,0 +1,58 @@
+name: Build APK (Auto-Fix)
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    # --- MAGIC FIX: Finds where the files are and moves them to root ---
+    - name: Fix Directory Structure
+      run: |
+        if [ ! -f "gradlew" ]; then
+           echo "⚠️ Root not found. Searching for project files..."
+           # Find directory containing gradlew
+           ROOT_DIR=$(find . -maxdepth 2 -name gradlew -printf '%h
+' | head -1)
+           if [ -n "$ROOT_DIR" ] && [ "$ROOT_DIR" != "." ]; then
+             echo "✅ Found project in $ROOT_DIR. Moving to root..."
+             cp -r $ROOT_DIR/* .
+             cp -r $ROOT_DIR/.* . 2>/dev/null || true
+           else
+             echo "❌ Could not find Gradle project. Please check upload."
+             ls -R
+           fi
+        else
+           echo "✅ Project is already in root."
+        fi
+
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: '8.2'
+
+    - name: Make Gradle Wrapper Executable
+      run: chmod +x gradlew || true
+
+    - name: Build APK
+      # Uses --no-daemon to save memory
+      run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: my-tv-app-debug
+        path: app/build/outputs/apk/debug/app-debug.apk
