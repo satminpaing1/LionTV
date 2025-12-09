@@ -1,41 +1,29 @@
 name: Build APK
-
 on: [push, workflow_dispatch]
-
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v4
-
-    - name: Fix Root Directory
-      run: |
-        if [ ! -f "gradlew" ]; then
-          echo "Searching for gradlew..."
-          TARGET=$(find . -name gradlew | head -n 1)
-          if [ -n "$TARGET" ]; then
-            DIR=$(dirname "$TARGET")
-            echo "Moving from $DIR to root"
-            cp -a "$DIR"/. .
-          fi
-        fi
-
     - uses: actions/setup-java@v4
       with:
         java-version: '17'
         distribution: 'temurin'
-
-    - uses: gradle/actions/setup-gradle@v3
-      with:
-        gradle-version: '8.2'
-
     - name: Build
       run: |
+        set -e
+        echo "Searching for gradlew..."
+        GRADLE_FILE=$(find . -name gradlew -print -quit)
+        if [ -z "$GRADLE_FILE" ]; then
+          echo "Error: gradlew not found!"
+          exit 1
+        fi
+        DIR=$(dirname "$GRADLE_FILE")
+        echo "Found project in: $DIR"
+        cd "$DIR"
         chmod +x gradlew
         ./gradlew assembleDebug --no-daemon
-
     - uses: actions/upload-artifact@v4
       with:
         name: app-debug
-        path: app/build/outputs/apk/debug/app-debug.apk
+        path: '**/*.apk'
