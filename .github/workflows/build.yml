@@ -19,14 +19,28 @@ jobs:
         
     - name: Build APK
       run: |
-        echo "🔹 RUNNING WORKFLOW VERSION: 5.0 (SYSTEM GRADLE)"
+        echo "🔹 RUNNING WORKFLOW VERSION: 6.0 (AUTO-UNZIP + SYSTEM GRADLE)"
+        
+        # 0. Check for ZIP file and unzip if user uploaded raw zip
+        if [ -f "source.zip" ]; then
+          echo "📦 Found source.zip! Unzipping..."
+          unzip -o source.zip
+        else
+          # Check for any zip just in case
+          ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
+          if [ -n "$ZIP_FILE" ]; then
+             echo "📦 Found zip file: $ZIP_FILE. Unzipping..."
+             unzip -o "$ZIP_FILE"
+          fi
+        fi
         
         # 1. Find the project root (where settings.gradle is)
         SETTINGS_FILE=$(find . -name settings.gradle -type f | head -n 1)
         
         if [ -z "$SETTINGS_FILE" ]; then
-          echo "❌ Error: settings.gradle not found anywhere."
-          find . -maxdepth 3
+          echo "❌ Error: settings.gradle not found."
+          echo "📂 Listing current files for debug:"
+          ls -R
           exit 1
         fi
         
@@ -36,7 +50,7 @@ jobs:
         cd "$PROJECT_DIR"
         
         # 2. Run Gradle directly (System installed)
-        echo "🚀 Starting Build with System Gradle..."
+        echo "🚀 Starting Build..."
         gradle assembleDebug --no-daemon --stacktrace --warning-mode all
         
     - name: Upload APK
