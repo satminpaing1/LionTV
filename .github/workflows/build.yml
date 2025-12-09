@@ -15,7 +15,8 @@ jobs:
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
       with:
-        gradle-version: '8.2'
+        gradle-version: '8.5' 
+        # Gradle 8.5 handles memory much better than 8.2
     
     - name: Accept Android Licenses
       run: |
@@ -23,14 +24,13 @@ jobs:
         
     - name: Build APK
       run: |
-        echo "🔹 RUNNING WORKFLOW VERSION: 9.0 (MAX MEMORY 3GB FIX)"
+        echo "🔹 RUNNING WORKFLOW VERSION: 10.0 (LIGHTWEIGHT ENGINE + GRADLE 8.5)"
         
-        # 0. Check for ZIP file and unzip if user uploaded raw zip
+        # 0. Unzip logic
         if [ -f "source.zip" ]; then
           echo "📦 Found source.zip! Unzipping..."
           unzip -o source.zip
         else
-          # Check for any zip just in case
           ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -n 1)
           if [ -n "$ZIP_FILE" ]; then
              echo "📦 Found zip file: $ZIP_FILE. Unzipping..."
@@ -38,28 +38,23 @@ jobs:
           fi
         fi
         
-        # 1. Find the project root (where settings.gradle is)
+        # 1. Find root
         SETTINGS_FILE=$(find . -name settings.gradle -type f | head -n 1)
-        
         if [ -z "$SETTINGS_FILE" ]; then
           echo "❌ Error: settings.gradle not found."
-          echo "📂 Listing current files for debug:"
-          ls -R
           exit 1
         fi
-        
         PROJECT_DIR=$(dirname "$SETTINGS_FILE")
-        echo "✅ Found project in: $PROJECT_DIR"
-        
         cd "$PROJECT_DIR"
         
-        # 2. Run Gradle with MAX MEMORY
-        # -Xmx3072m: Allocates 3GB RAM to Gradle (Server has ~7GB)
-        # --max-workers 1: Forces serial execution to save memory
-        # -x lint: Skips analysis
-        echo "🚀 Starting Build with 3GB RAM allocation..."
+        # 2. Build with Optimized Settings
+        # -Xmx2560m: Sweet spot for GitHub Runners (Leaves room for Metaspace)
+        # clean: Ensures no stale cache causes crashes
+        echo "🚀 Starting Build (Clean + Assemble)..."
         
-        gradle assembleDebug -x lint -x test --no-daemon --stacktrace --max-workers 1         -Dorg.gradle.jvmargs="-Xmx3072m -XX:MaxMetaspaceSize=1024m"         -Pandroid.useAndroidX=true         -Pandroid.enableJetifier=true
+        chmod +x gradlew || true
+        
+        gradle clean assembleDebug -x lint --no-daemon --stacktrace         -Dorg.gradle.jvmargs="-Xmx2560m -XX:MaxMetaspaceSize=512m"
         
     - name: Upload APK
       uses: actions/upload-artifact@v4
