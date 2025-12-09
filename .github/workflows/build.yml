@@ -24,12 +24,15 @@ jobs:
       with:
         gradle-version: '8.2'
 
-    # This step unzips the file you uploaded so Gradle can find the code
     - name: Unzip Source Code
       run: unzip -o source.zip
 
+    - name: Make Gradle Wrapper Executable (if exists)
+      run: chmod +x app/gradlew || true
+
     - name: Build APK
-      run: gradle assembleDebug
+      # Using --stacktrace to see errors if it fails
+      run: gradle assembleDebug --stacktrace
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
