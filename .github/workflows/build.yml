@@ -25,8 +25,6 @@ jobs:
         gradle-version: '8.2'
 
     - name: Unzip Source Code (if needed)
-      # Some users upload the zip, some unzip and upload. This handles both cases roughly.
-      # But primarily this workflow assumes the files are already in the repo root.
       run: echo "Assuming files are in root"
 
     - name: Make Gradle Wrapper Executable (if exists)
