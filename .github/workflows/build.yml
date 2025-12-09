@@ -16,10 +16,14 @@ jobs:
       uses: gradle/actions/setup-gradle@v3
       with:
         gradle-version: '8.2'
+    
+    - name: Accept Android Licenses
+      run: |
+        yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
         
     - name: Build APK
       run: |
-        echo "🔹 RUNNING WORKFLOW VERSION: 8.0 (LOW MEMORY + NO LINT)"
+        echo "🔹 RUNNING WORKFLOW VERSION: 9.0 (MAX MEMORY 3GB FIX)"
         
         # 0. Check for ZIP file and unzip if user uploaded raw zip
         if [ -f "source.zip" ]; then
@@ -49,13 +53,13 @@ jobs:
         
         cd "$PROJECT_DIR"
         
-        # 2. Run Gradle with OPTIMIZED SETTINGS
-        # -x lint: Skips code checking (Saves huge memory)
-        # -x test: Skips tests
-        # -Xmx1024m: Prevents OOM by staying within free tier limits
-        echo "🚀 Starting Build (Fast Mode)..."
+        # 2. Run Gradle with MAX MEMORY
+        # -Xmx3072m: Allocates 3GB RAM to Gradle (Server has ~7GB)
+        # --max-workers 1: Forces serial execution to save memory
+        # -x lint: Skips analysis
+        echo "🚀 Starting Build with 3GB RAM allocation..."
         
-        gradle assembleDebug -x lint -x test --no-daemon --max-workers 1 -Dorg.gradle.jvmargs=-Xmx1024m --stacktrace
+        gradle assembleDebug -x lint -x test --no-daemon --stacktrace --max-workers 1         -Dorg.gradle.jvmargs="-Xmx3072m -XX:MaxMetaspaceSize=1024m"         -Pandroid.useAndroidX=true         -Pandroid.enableJetifier=true
         
     - name: Upload APK
       uses: actions/upload-artifact@v4
