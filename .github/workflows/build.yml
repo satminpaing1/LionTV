@@ -25,8 +25,7 @@ jobs:
         if [ ! -f "gradlew" ]; then
            echo "⚠️ Root not found. Searching for project files..."
            # Find directory containing gradlew
-           ROOT_DIR=$(find . -maxdepth 2 -name gradlew -printf '%h
-' | head -1)
+           ROOT_DIR=$(find . -maxdepth 2 -name gradlew -printf '%h| head -1)
            if [ -n "$ROOT_DIR" ] && [ "$ROOT_DIR" != "." ]; then
              echo "✅ Found project in $ROOT_DIR. Moving to root..."
              cp -r $ROOT_DIR/* .
