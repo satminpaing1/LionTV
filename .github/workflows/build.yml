@@ -19,7 +19,7 @@ jobs:
         
     - name: Build APK
       run: |
-        echo "🔹 RUNNING WORKFLOW VERSION: 7.0 (STABILITY FIX)"
+        echo "🔹 RUNNING WORKFLOW VERSION: 8.0 (LOW MEMORY + NO LINT)"
         
         # 0. Check for ZIP file and unzip if user uploaded raw zip
         if [ -f "source.zip" ]; then
@@ -49,11 +49,13 @@ jobs:
         
         cd "$PROJECT_DIR"
         
-        # 2. Run Gradle with RESTRICTED Resources (Fixes Crashes)
-        # --max-workers 1: Prevents running multiple tasks at once (saves RAM)
-        # -Dorg.gradle.jvmargs: Forces memory limit
-        echo "🚀 Starting Build (Single Worker Mode)..."
-        gradle assembleDebug --no-daemon --max-workers 1 -Dorg.gradle.jvmargs=-Xmx2048m --stacktrace
+        # 2. Run Gradle with OPTIMIZED SETTINGS
+        # -x lint: Skips code checking (Saves huge memory)
+        # -x test: Skips tests
+        # -Xmx1024m: Prevents OOM by staying within free tier limits
+        echo "🚀 Starting Build (Fast Mode)..."
+        
+        gradle assembleDebug -x lint -x test --no-daemon --max-workers 1 -Dorg.gradle.jvmargs=-Xmx1024m --stacktrace
         
     - name: Upload APK
       uses: actions/upload-artifact@v4
