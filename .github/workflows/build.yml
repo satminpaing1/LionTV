@@ -19,13 +19,14 @@ jobs:
         
     - name: Build APK
       run: |
+        echo "🔹 RUNNING WORKFLOW VERSION: 5.0 (SYSTEM GRADLE)"
+        
         # 1. Find the project root (where settings.gradle is)
         SETTINGS_FILE=$(find . -name settings.gradle -type f | head -n 1)
         
         if [ -z "$SETTINGS_FILE" ]; then
-          echo "❌ Error: settings.gradle not found."
-          echo "📂 Listing all files to help debug:"
-          ls -R
+          echo "❌ Error: settings.gradle not found anywhere."
+          find . -maxdepth 3
           exit 1
         fi
         
@@ -35,9 +36,8 @@ jobs:
         cd "$PROJECT_DIR"
         
         # 2. Run Gradle directly (System installed)
-        # We use 'gradle' not './gradlew' because the wrapper is missing
         echo "🚀 Starting Build with System Gradle..."
-        gradle assembleDebug --no-daemon --stacktrace
+        gradle assembleDebug --no-daemon --stacktrace --warning-mode all
         
     - name: Upload APK
       uses: actions/upload-artifact@v4
